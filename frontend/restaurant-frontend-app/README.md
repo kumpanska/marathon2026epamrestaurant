@@ -52,7 +52,7 @@
 
 | Команда | Результат |
 |---|---|
-| `npm run test:hw` | Усі 67 тестів пройшли |
+| `npm run test:hw` | Усі 70 тестів пройшли |
 | `npx tsc -p tsconfig.app.json --noEmit` | Успішно |
 | `npx tsc -p tsconfig.spec.json --noEmit` | Успішно |
 

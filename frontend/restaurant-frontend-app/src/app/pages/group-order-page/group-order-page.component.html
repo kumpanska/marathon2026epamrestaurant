@@ -1,0 +1,189 @@
+<main class="page">
+  @if (isLoading()) {
+    <section class="message-panel" aria-live="polite">
+      <span class="loader" aria-hidden="true"></span>
+      <p>Loading group pre-order…</p>
+    </section>
+  } @else if (errorMessage()) {
+    <section class="message-panel error-panel" aria-live="assertive">
+      <h1>{{ errorMessage() }}</h1>
+      <button class="action-button secondary-button" type="button" (click)="load()">
+        Try again
+      </button>
+    </section>
+  } @else if (invite(); as reservation) {
+    <div class="review">
+      <header class="page-header">
+        <div class="heading">
+          <p class="restaurant">{{ reservation.RestaurantName }}</p>
+          <div class="title-row">
+            <h1>Group Pre-Order</h1>
+            <span class="status-badge" [class.status-badge--sent]="groupStatus() === 'Submitted'">
+              {{ statusLabel() }}
+            </span>
+          </div>
+        </div>
+
+        <dl class="reservation-details">
+          <div class="detail">
+            <dt>Location</dt>
+            <dd>{{ reservation.LocationAddress }}</dd>
+          </div>
+          <div class="detail">
+            <dt>Date</dt>
+            <dd>
+              <time [attr.datetime]="reservation.StartTime">
+                {{ reservation.StartTime | date: 'MMM d, y' }}
+              </time>
+            </dd>
+          </div>
+          <div class="detail">
+            <dt>Time</dt>
+            <dd>
+              <time [attr.datetime]="reservation.StartTime">
+                {{ reservation.StartTime | date: 'h:mm a' }} –
+                {{ reservation.EndTime | date: 'h:mm a' }}
+              </time>
+            </dd>
+          </div>
+          <div class="detail">
+            <dt>Guests</dt>
+            <dd>{{ participants().length }} of {{ reservation.MaxGuestCount }} guests</dd>
+          </div>
+        </dl>
+      </header>
+
+      @if (lastUpdatedAt(); as updatedAt) {
+        <div class="sync-status" aria-live="polite">
+          <div>
+            <p>Updated at {{ updatedAt | date: 'HH:mm:ss' }}</p>
+            @if (refreshFailed()) {
+              <p class="refresh-error">
+                Couldn't refresh. Showing data from {{ updatedAt | date: 'HH:mm:ss' }}.
+              </p>
+            }
+          </div>
+          @if (groupStatus() === 'Open') {
+            <button
+              class="action-button secondary-button refresh-button"
+              type="button"
+              [disabled]="isRefreshing()"
+              (click)="refresh()"
+            >
+              {{ isRefreshing() ? 'Refreshing…' : 'Refresh' }}
+            </button>
+          }
+        </div>
+      }
+
+      <section class="orders" aria-label="Guest pre-orders">
+        @if (pendingParticipantCount() > 0) {
+          <p class="pending-notice" role="status">{{ pendingParticipantsMessage() }}</p>
+        }
+
+        @if (!hasAnyDishes()) {
+          <p class="empty-state">Participants haven't added any dishes yet</p>
+        } @else {
+          <h2 class="section-title">Participants</h2>
+          <ul class="participants">
+            @for (person of participants(); track person.id) {
+              <li>
+                <app-participant-card
+                  [participant]="person"
+                  [isOwner]="person.id === guestSessionId()"
+                  [canRemove]="person.type === 'Guest' && groupStatus() === 'Open'"
+                  (removeClick)="openRemoveConfirmation($event)"
+                />
+              </li>
+            }
+          </ul>
+
+          <section class="consolidated" aria-labelledby="consolidated-title">
+            <div class="section-heading">
+              <div>
+                <h2 id="consolidated-title">Consolidated pre-order</h2>
+                <p>Confirmed dishes going to the restaurant</p>
+              </div>
+            </div>
+            <ul class="consolidated-items">
+              @for (item of consolidatedOrder().items; track item.dish.id) {
+                <li>
+                  <span class="dish-name">{{ item.dish.name }}</span>
+                  <span class="dish-quantity">× {{ item.quantity }}</span>
+                  <span class="dish-total">{{ item.dish.price * item.quantity | currency }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </section>
+
+      <footer class="grand-total">
+        <span>Grand Total</span>
+        <strong>{{ consolidatedOrder().total | currency }}</strong>
+      </footer>
+
+      @if (groupStatus() === 'Open') {
+        <button
+          class="action-button submit-button"
+          type="button"
+          [disabled]="!canSubmit()"
+          (click)="openConfirmation()"
+        >
+          Submit Pre-Order
+        </button>
+      }
+    </div>
+  }
+
+  @if (isConfirmationOpen()) {
+    <app-modal title="Submit this pre-order?" (closed)="closeConfirmation()">
+      <p class="confirmation-copy">The confirmed dishes will be sent to the restaurant.</p>
+      <div modal-actions class="dialog-actions">
+        <button
+          class="action-button secondary-button"
+          type="button"
+          [disabled]="isSubmitting()"
+          (click)="closeConfirmation()"
+        >
+          Cancel
+        </button>
+        <button
+          class="action-button submit-button"
+          type="button"
+          [disabled]="isSubmitting()"
+          (click)="submit()"
+        >
+          {{ isSubmitting() ? 'Submitting…' : 'Submit' }}
+        </button>
+      </div>
+    </app-modal>
+  }
+
+  @if (participantToRemove(); as participant) {
+    <app-modal title="Remove guest?" (closed)="closeRemoveConfirmation()">
+      <p class="confirmation-copy">
+        Are you sure you want to remove <strong>{{ participant.name }}</strong> and their pre-order
+        from this reservation? This action cannot be undone.
+      </p>
+      <div modal-actions class="dialog-actions">
+        <button
+          class="action-button secondary-button"
+          type="button"
+          [disabled]="isRemoving()"
+          (click)="closeRemoveConfirmation()"
+        >
+          Cancel
+        </button>
+        <button
+          class="action-button submit-button"
+          type="button"
+          [disabled]="isRemoving()"
+          (click)="confirmRemove()"
+        >
+          {{ isRemoving() ? 'Removing…' : 'Remove Guest' }}
+        </button>
+      </div>
+    </app-modal>
+  }
+</main>

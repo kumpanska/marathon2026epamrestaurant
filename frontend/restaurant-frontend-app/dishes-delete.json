@@ -1,0 +1,8 @@
+{
+  "Dishes": [
+    { "DeleteRequest": { "Key": { "id": { "S": "1862cae4-8538-4905-92ca-7c849c701b3c" } } } },
+    { "DeleteRequest": { "Key": { "id": { "S": "07efc9a8-e9fc-4612-9e80-59fda0dc7fc3" } } } },
+    { "DeleteRequest": { "Key": { "id": { "S": "d2d165f7-4259-4a13-93cd-d20715e7d130" } } } },
+    { "DeleteRequest": { "Key": { "id": { "S": "3c8207b9-945a-4a42-a4bc-5dad3eb3d992" } } } }
+  ]
+}

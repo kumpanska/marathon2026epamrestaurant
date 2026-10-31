@@ -17,6 +17,32 @@ tags:
     description: Operations for group reservations
 
 paths:
+  /waiters:
+    delete:
+      tags:
+        - Waiters
+      summary: Remove a waiter from the location assignment
+      operationId: removeWaiter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Waiter assignment removed
+        '400':
+          description: Invalid or missing email
+        '404':
+          description: Waiter assignment not found
+
   /guest/sessions/{guestSessionId}/dishes:
     post:
       tags:

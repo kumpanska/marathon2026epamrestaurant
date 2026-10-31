@@ -56,17 +56,12 @@ public class TableService : ITableService
             tables = tables.Where(t => t.Capacity >= capacity);
         }
 
-        var availableTables = new List<Table>();
+        var checkTasks = tables.Select(async table => (
+            Table: table,
+            IsAvailable: await IsTableAvailableAsync(table.Id, startTime, workingDayEnd, minSlotLength)));
+        var results = await Task.WhenAll(checkTasks);
 
-        var checkTasks = tables.Select(async table =>
-        {
-            var isAvailable = await IsTableAvailableAsync(table.Id, startTime, workingDayEnd, minSlotLength);
-            if (isAvailable)
-                availableTables.Add(table);
-        });
-
-        await Task.WhenAll(checkTasks);
-        return availableTables;
+        return results.Where(result => result.IsAvailable).Select(result => result.Table).ToList();
     }
 
     public async Task<IEnumerable<Table>> GetAllTablesForLocationAsync(string locationId)
@@ -107,30 +102,15 @@ public class TableService : ITableService
 
     private async Task<bool> IsTableAvailableAsync(string tableId, DateTime startTime, DateTime workingDayEnd, TimeSpan minSlotLength)
     {
+        var requestedEndTime = startTime + minSlotLength;
+        if (requestedEndTime > workingDayEnd)
+            return false;
+
         var reservations = await _reservationRepository.GetReservationsByTableIdAsync(tableId);
 
-        var relevantReservations = reservations
-            .Where(r => r.Status == ReservationStatus.Reserved && r.EndTime > startTime)
-            .OrderBy(r => r.StartTime)
-            .ToList();
-
-        var current = startTime;
-
-        foreach (var res in relevantReservations)
-        {
-            if (current >= workingDayEnd) break;
-
-            if (res.StartTime > current)
-            {
-                var gap = res.StartTime - current;
-                if (gap >= minSlotLength)
-                    return true;
-            }
-
-            if (res.EndTime > current)
-                current = res.EndTime;
-        }
-
-        return (workingDayEnd - current) >= minSlotLength;
+        return !reservations.Any(reservation =>
+            reservation.Status == ReservationStatus.Reserved &&
+            reservation.StartTime < requestedEndTime &&
+            reservation.EndTime > startTime);
     }
 }

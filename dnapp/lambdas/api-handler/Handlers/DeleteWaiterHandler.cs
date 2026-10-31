@@ -22,21 +22,21 @@ public class DeleteWaiterHandler : IApiRequestHandler
 
     public async Task<APIGatewayProxyResponse> HandleRequest(APIGatewayProxyRequest request, ILambdaContext context)
     {
-        if (!TryDeserializeRequest(request, out var waiterListRequest))
+        if (!TryDeserializeRequest(request, out var removeWaiterRequest))
         {
             return ResponseBuilder.CreateErrorResponse(400, "Invalid request body", context.Logger);
         }
 
         try
         {
-            PersonalDataValidator.ValidateEmail(waiterListRequest!.Email);
+            PersonalDataValidator.ValidateEmail(removeWaiterRequest!.Email);
         }
         catch (ValidationException ex)
         {
             return ResponseBuilder.CreateErrorResponse(400, ex.Message, context.Logger);
         }
 
-        var email = waiterListRequest.Email.Trim().ToLower();
+        var email = removeWaiterRequest.Email.Trim().ToLower();
 
         return await HandleDeleteRequest(email, context.Logger);
     }
@@ -60,16 +60,16 @@ public class DeleteWaiterHandler : IApiRequestHandler
         return ResponseBuilder.CreateSuccessResponse("Email deleted successfully");
     }
 
-    private static bool TryDeserializeRequest(APIGatewayProxyRequest request, out UpdateWaiterListRequest? registrationRequest)
+    private static bool TryDeserializeRequest(APIGatewayProxyRequest request, out RemoveWaiterRequest? removeWaiterRequest)
     {
         try
         {
-            registrationRequest = JsonSerializer.Deserialize<UpdateWaiterListRequest>(request.Body);
-            return registrationRequest != null;
+            removeWaiterRequest = JsonSerializer.Deserialize<RemoveWaiterRequest>(request.Body);
+            return removeWaiterRequest != null;
         }
         catch (JsonException)
         {
-            registrationRequest = null;
+            removeWaiterRequest = null;
             return false;
         }
     }

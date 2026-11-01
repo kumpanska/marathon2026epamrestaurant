@@ -32,7 +32,7 @@ dotnet run --no-build -- --report-trx                          # everything
 dotnet run --no-build -- --treenode-filter "/*/*/*/*[Category=smoke]"   # by tag
 ```
 
-Everything a run produces lands in `TestResults/`: the TUnit report and TRX, the Reqnroll report in `reqnroll/`, per-scenario browser timing reports in `performance/`, and failure traces in `traces/` (open one with `npx playwright show-trace <file>.zip`). Performance JSON includes page-load and API-request durations with their configured thresholds. Dropped UI tests retain screenshots, video, and network/action details in their Playwright traces for analysis.
+Everything a run produces lands in `TestResults/`: the TUnit report and TRX, the Reqnroll report in `reqnroll/`, per-scenario browser timing reports in `performance/`, and failure traces in `traces/` (open one with `npx playwright show-trace <file>.zip`). Performance JSON includes page-load and API-request durations with their configured thresholds. Failed UI scenarios attach their Playwright trace to the test report; the trace includes screenshots, snapshots, and network/action details for analysis.
 
 Some scenarios are expected to fail (`@known-defect`, bugs in the application) or are skipped (`@wip`, no admin account configured). That is intentional.
 

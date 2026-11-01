@@ -1,0 +1,37 @@
+﻿name: Autotests
+
+on:
+  push:
+    branches: [main]
+    paths: ["report-portal/**"]
+  pull_request:
+    paths: ["report-portal/**"]
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: report-portal
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Run tests and report to ReportPortal
+        env:
+          RP_API_KEY: ${{ secrets.RP_API_KEY }}
+          RP_ENDPOINT: ${{ secrets.RP_ENDPOINT }}
+        run: |
+          . .venv/bin/activate
+          pytest --reportportal \
+            -o rp_endpoint="$RP_ENDPOINT" \
+            -o rp_project=autotests \
+            -o rp_api_key="$RP_API_KEY"

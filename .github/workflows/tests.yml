@@ -24,7 +24,17 @@ jobs:
           python3 -m venv .venv
           . .venv/bin/activate
           pip install -r requirements.txt
-
+      - name: Check ReportPortal connection
+        env:
+          RP_API_KEY: ${{ secrets.RP_API_KEY }}
+          RP_ENDPOINT: ${{ secrets.RP_ENDPOINT }}
+        run: |
+          [ -n "$RP_API_KEY" ] && echo "API key: set" || echo "API key: EMPTY"
+          echo "Endpoint: $RP_ENDPOINT"
+          curl -s -o /dev/null -w "HTTP status: %{http_code}\n" \
+            -H "Authorization: Bearer $RP_API_KEY" \
+            "$RP_ENDPOINT/api/v1/autotests/launch"
+            
       - name: Run tests and report to ReportPortal
         env:
           RP_API_KEY: ${{ secrets.RP_API_KEY }}

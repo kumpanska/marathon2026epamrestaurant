@@ -91,26 +91,28 @@
         "extract-i18n": {
           "builder": "@angular/build:extract-i18n"
         },
-        "test": {
-          "builder": "@angular/build:karma",
-          "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
-            "tsConfig": "tsconfig.spec.json",
-            "inlineStyleLanguage": "scss",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              },
-              "src/assets"
-            ],
-            "styles": ["src/styles.scss"],
-            "stylePreprocessorOptions": {
-              "includePaths": ["src"]
-            },
-            "scripts": []
-          }
-        },
+"test": {
+  "builder": "@angular/build:karma",
+  "options": {
+    "karmaConfig": "karma.conf.js",
+    "exclude": ["src/app/homework-tests/**/*.spec.ts"],
+    "polyfills": ["zone.js", "zone.js/testing"],
+    "tsConfig": "tsconfig.spec.json",
+    "inlineStyleLanguage": "scss",
+    "assets": [
+      {
+        "glob": "**/*",
+        "input": "public"
+      },
+      "src/assets"
+    ],
+    "styles": ["src/styles.scss"],
+    "stylePreprocessorOptions": {
+      "includePaths": ["src"]
+    },
+    "scripts": []
+  }
+},
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {

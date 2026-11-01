@@ -16,6 +16,12 @@ const RESERVATION: ReservationCustomer = {
   waiterId: 'waiter-1',
 };
 
+function findGroupButton(root: HTMLElement): HTMLButtonElement | undefined {
+  return Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(
+    (candidate) => candidate.textContent?.trim() === 'Group Pre-Order',
+  );
+}
+
 describe('CardReservationComponent', () => {
   let component: CardReservationComponent;
   let fixture: ComponentFixture<CardReservationComponent>;
@@ -38,9 +44,7 @@ describe('CardReservationComponent', () => {
   });
 
   it('shows a group pre-order action for a customer reservation with multiple guests', () => {
-    const groupButton = Array.from(
-      fixture.nativeElement.querySelectorAll<HTMLButtonElement>('button')
-    ).find((candidate: HTMLButtonElement) => candidate.textContent?.trim() === 'Group Pre-Order');
+    const groupButton = findGroupButton(fixture.nativeElement as HTMLElement);
 
     expect(groupButton).toBeTruthy();
   });
@@ -49,9 +53,7 @@ describe('CardReservationComponent', () => {
     fixture.componentRef.setInput('r', { ...RESERVATION, guestCount: 1 });
     fixture.detectChanges();
 
-    const groupButton = Array.from(
-      fixture.nativeElement.querySelectorAll<HTMLButtonElement>('button')
-    ).find((candidate: HTMLButtonElement) => candidate.textContent?.trim() === 'Group Pre-Order');
+    const groupButton = findGroupButton(fixture.nativeElement as HTMLElement);
 
     expect(groupButton).toBeUndefined();
   });
@@ -59,11 +61,9 @@ describe('CardReservationComponent', () => {
   it('opens the group order route from the reservation card', async () => {
     const router = TestBed.inject(Router);
     const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
-    const groupButton = Array.from(
-      fixture.nativeElement.querySelectorAll<HTMLButtonElement>('button')
-    ).find((candidate: HTMLButtonElement) => candidate.textContent?.trim() === 'Group Pre-Order');
+    const groupButton = findGroupButton(fixture.nativeElement as HTMLElement);
 
-    (groupButton as HTMLButtonElement).click();
+    groupButton?.click();
 
     expect(navigateSpy).toHaveBeenCalledWith(['/reservations', RESERVATION.id, 'group-order']);
   });

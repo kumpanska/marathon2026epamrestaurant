@@ -1,37 +1,59 @@
-﻿name: Autotests
+﻿name: CI
 
 on:
   push:
     branches: [main]
-    paths: ["report-portal/**"]
+    paths: ["frontend/restaurant-frontend-app/**"]
   pull_request:
-    paths: ["report-portal/**"]
+    paths: ["frontend/restaurant-frontend-app/**"]
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
 
 jobs:
-  test:
+  build-test:
     runs-on: self-hosted
     defaults:
       run:
-        working-directory: report-portal
+        working-directory: frontend/restaurant-frontend-app
+    env:
+      RP_PROJECT: restaurant-app-autotests
+      RP_LAUNCH: Frontend unit tests
+      NODE_OPTIONS: --max-old-space-size=2048
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          python3 -m venv .venv
-          . .venv/bin/activate
-          pip install -r requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/restaurant-frontend-app/package-lock.json
 
-      - name: Run tests and report to ReportPortal
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Unit tests
+        run: npx ng test --watch=false --browsers=ChromeHeadlessCI
+
+      - name: Send results to ReportPortal
+        if: always()
         env:
           RP_API_KEY: ${{ secrets.RP_API_KEY }}
           RP_ENDPOINT: ${{ secrets.RP_ENDPOINT }}
         run: |
-          . .venv/bin/activate
-          pytest --reportportal \
-            -o rp_endpoint="$RP_ENDPOINT" \
-            -o rp_project=restaurant-app-autotests \
-            -o rp_api_key="$RP_API_KEY"
+          test -f test-results/junit.xml || { echo "junit.xml not found"; exit 1; }
+          rm -f results.zip
+          (cd test-results && zip -q ../results.zip junit.xml)
+          RQ=$(printf '{"name":"%s","description":"GitHub run #%s","mode":"DEFAULT"}' "$RP_LAUNCH" "${{ github.run_number }}")
+          curl -sS --fail-with-body -X POST \
+            "$RP_ENDPOINT/api/v1/plugin/$RP_PROJECT/junit/import" \
+            -H "Authorization: Bearer $RP_API_KEY" \
+            -F "file=@results.zip;type=application/x-zip-compressed" \
+            -F "launchImportRq=$RQ;type=application/json"
+
+      - name: Build
+        run: npm run build

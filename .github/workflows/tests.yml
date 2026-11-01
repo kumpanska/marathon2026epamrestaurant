@@ -39,7 +39,7 @@ jobs:
       - name: Unit tests
         run: npx ng test --watch=false --browsers=ChromeHeadlessCI
 
-            - name: Send results to ReportPortal
+      - name: Send results to ReportPortal
         if: always()
         env:
           RP_API_KEY: ${{ secrets.RP_API_KEY }}
@@ -52,6 +52,6 @@ jobs:
             "$RP_ENDPOINT/api/v1/plugin/$RP_PROJECT/junit/import" \
             -H "Authorization: Bearer $RP_API_KEY" \
             -F "file=@rp-upload/Frontend-unit-tests.zip;type=application/x-zip-compressed"
-            
+
       - name: Build
         run: npm run build

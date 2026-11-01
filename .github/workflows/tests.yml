@@ -39,21 +39,19 @@ jobs:
       - name: Unit tests
         run: npx ng test --watch=false --browsers=ChromeHeadlessCI
 
-      - name: Send results to ReportPortal
+            - name: Send results to ReportPortal
         if: always()
         env:
           RP_API_KEY: ${{ secrets.RP_API_KEY }}
           RP_ENDPOINT: ${{ secrets.RP_ENDPOINT }}
         run: |
           test -f test-results/junit.xml || { echo "junit.xml not found"; exit 1; }
-          rm -f results.zip
-          (cd test-results && zip -q ../results.zip junit.xml)
-          RQ=$(printf '{"name":"%s","description":"GitHub run #%s","mode":"DEFAULT"}' "$RP_LAUNCH" "${{ github.run_number }}")
+          rm -rf rp-upload && mkdir rp-upload
+          (cd test-results && zip -q ../rp-upload/Frontend-unit-tests.zip junit.xml)
           curl -sS --fail-with-body -X POST \
             "$RP_ENDPOINT/api/v1/plugin/$RP_PROJECT/junit/import" \
             -H "Authorization: Bearer $RP_API_KEY" \
-            -F "file=@results.zip;type=application/x-zip-compressed" \
-            -F "launchImportRq=$RQ;type=application/json"
-
+            -F "file=@rp-upload/Frontend-unit-tests.zip;type=application/x-zip-compressed"
+            
       - name: Build
         run: npm run build

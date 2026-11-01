@@ -1,12 +1,12 @@
 # Restaurant AQA framework
 
-**Direction: Backend. Approach: BDD (Reqnroll/Gherkin) + Screenplay.** This solution exercises the group pre-order API; the current frontend does not yet provide a group-participants screen, so UI scenarios and speculative page selectors are intentionally not included.
+**Direction: Backend. Approach: BDD (Reqnroll/Gherkin) + Screenplay.** The suite uses the browser for customer and waiter workflows, with API calls for test-data setup and state verification.
 
 End-to-end tests for the Green & Tasty restaurant application: Reqnroll (Gherkin) + TUnit + Playwright for .NET, with the Screenplay pattern.
 
-## Group pre-order (Level 1)
+## Group pre-order (Levels 1 and 2)
 
-`Features/GroupPreOrder.feature` verifies that the owner can read guest baskets, dish quantities, confirmation state, and participant/group totals. It also checks that another customer, a guest, a waiter, and an unauthenticated visitor cannot read the list, and that a missing group is rejected. Setup uses the configured test table and its assigned waiter, creates a sample dish, customer owner, reservation, and guest sessions through the API. Unique customer accounts are created for scenarios; the application currently has no customer-delete endpoint. The table must have an available 90-minute slot in the next 15 days and seat at least four guests.
+`Features/GroupPreOrder.feature` covers participant baskets and totals through the API. `Features/GroupPreOrderConfirmation.feature` exercises guest and owner baskets, owner review and confirmation, and waiter verification through the browser; API calls are limited to test-data setup and state verification. Confirmation scenarios cover unconfirmed and empty baskets, a missing order, reservation, or group, repeated confirmation, and a non-owner caller. Setup uses the configured test table and its assigned waiter, creates a sample dish, customer owner, reservation, and guest sessions. Unique customer accounts and reservation times are created per scenario; the application currently has no customer-delete endpoint, so cleanup removes deletable guest sessions, dishes, and reservations while unique accounts remain. The table must have an available 90-minute slot in the next 15 days and seat at least four guests.
 
 Group pre-order scenarios require `TESTTABLE_ID`, `TESTTABLE_WAITER_USERNAME`, and `TESTTABLE_WAITER_PASSWORD` in `.env` or CI variables/secrets. These settings identify the existing table and waiter assignment needed by the backend to route a customer reservation. The configured table waiter is also used as the standing waiter account when `WAITER_USERNAME` / `WAITER_PASSWORD` are omitted.
 
@@ -16,6 +16,8 @@ The selected behavior for this suite is:
 - A group with no joined guests returns `participants: []` and `total: 0`.
 - Unauthenticated requests receive `401`, authenticated non-owners receive `403`, and a missing group receives `404`.
 - The group total equals the sum of all participant subtotals; each subtotal is the sum of dish price multiplied by quantity.
+- A confirmed empty basket is allowed, but group confirmation is rejected if the combined confirmed baskets contain no dishes.
+- Only the reservation owner may confirm; the order and group reservation are submitted together, and unconfirmed baskets are excluded.
 
 The empty-group scenario is tagged `@known-defect`: the current backend creates an owner guest session with a reservation, and `GetGroupSessionsAsync` includes that session in `participants`, contrary to the required empty-group response. Remove the tag when the API is changed to return only joined guests for this case.
 
@@ -30,7 +32,7 @@ dotnet run --no-build -- --report-trx                          # everything
 dotnet run --no-build -- --treenode-filter "/*/*/*/*[Category=smoke]"   # by tag
 ```
 
-Everything a run produces lands in `TestResults/`: the TUnit report and TRX, the Reqnroll report in `reqnroll/`, and Playwright traces in `traces/` (open one with `npx playwright show-trace <file>.zip`).
+Everything a run produces lands in `TestResults/`: the TUnit report and TRX, the Reqnroll report in `reqnroll/`, per-scenario browser timing reports in `performance/`, and failure traces in `traces/` (open one with `npx playwright show-trace <file>.zip`). Performance JSON includes page-load and API-request durations with their configured thresholds. Failed UI scenarios retain screenshots and network/action details in their Playwright traces.
 
 Some scenarios are expected to fail (`@known-defect`, bugs in the application) or are skipped (`@wip`, no admin account configured). That is intentional.
 
@@ -40,7 +42,7 @@ Some scenarios are expected to fail (`@known-defect`, bugs in the application) o
 |---|---|
 | Git hooks (local) | `pre-commit`: `dotnet format` check and Gherkin lint on staged files · `commit-msg`: Conventional Commits · `pre-push`: build with analyzers |
 | `aqa-quality.yml` | on every push and pull request: no generated files tracked, format, build (warnings are errors), Gherkin lint, test discovery |
-| `aqa-tests.yml` | the scenarios themselves, nightly and on demand (Actions → AQA Tests → Run workflow) |
+| `aqa-tests.yml` | the scenarios themselves, nightly and on demand (Actions → AQA Tests → Run workflow); reports and traces upload even when scenarios fail |
 
 Enable the hooks once per clone, from the repository root:
 
@@ -64,6 +66,7 @@ Settings come from `.env` or real environment variables (variables win):
 | `WAITER_USERNAME`, `WAITER_PASSWORD` | a waiter account that already exists in the environment under test |
 | `TESTTABLE_ID`, `TESTTABLE_WAITER_*` | a table and the waiter assigned to it (only for scenarios that need them) |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | an admin account; without it the admin scenarios are skipped |
+| `PERF_PAGE_LOAD_MS`, `PERF_API_RESPONSE_MS` | page-load and API-request performance budgets included in each UI scenario's JSON report |
 
 The full list, with defaults, is in `.env.example`.
 

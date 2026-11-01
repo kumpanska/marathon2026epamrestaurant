@@ -89,7 +89,19 @@ public class ScenarioStageHooks(IObjectContainer container, ScenarioContext scen
         try
         {
             if (stage is UiStageContext ui)
-                await HandleTrace(ui.BrowserContext, scenarioContext, outputHelper);
+            {
+                try
+                {
+                    var reportPath = await PerformanceReport.WriteAsync(
+                        ui.Actor.LookingAtThePage(),
+                        scenarioContext.ScenarioInfo.Title);
+                    outputHelper.AddAttachment(reportPath);
+                }
+                finally
+                {
+                    await HandleTrace(ui.BrowserContext, scenarioContext, outputHelper);
+                }
+            }
         }
         finally
         {

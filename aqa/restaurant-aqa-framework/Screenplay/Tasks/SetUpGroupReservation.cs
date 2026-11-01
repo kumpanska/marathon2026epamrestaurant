@@ -73,7 +73,10 @@ public sealed class SetUpGroupReservation(int guestCount = 8) : ITask
         actor.Remember(new GroupReservationFixture(
             reservation,
             group.GroupReservationId,
-            ownerToken));
+            ownerToken,
+            visitor.Email,
+            visitor.Password,
+            invite.Token));
     }
 
     private static void EnsureSucceeded(ApiResponseContext response, string action)

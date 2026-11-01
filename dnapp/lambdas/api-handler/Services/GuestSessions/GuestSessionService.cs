@@ -33,12 +33,29 @@ public class GuestSessionService(
 {
     public async Task<bool> IsAuthorizedAsync(string guestSessionToken, string guestSessionId)
     {
-        string hash = Convert.ToBase64String(SHA256.HashData(Convert.FromBase64String(guestSessionToken)));
+        byte[] tokenBytes;
+        try
+        {
+            tokenBytes = Convert.FromBase64String(guestSessionToken);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+        string hash = Convert.ToBase64String(SHA256.HashData(tokenBytes));
         GuestSession? guestSession = await guestSessionRepository.GetByTokenHash(hash);
         if (guestSession is null)
             return false;
 
         return guestSession.Id == guestSessionId;
+    }
+
+    public async Task<bool> IsOwnerSessionAuthorizedAsync(string userId, string guestSessionId)
+    {
+        GuestSession? guestSession = await guestSessionRepository.GetByGuestSessionId(guestSessionId);
+        return guestSession is { IsOwnerSession: true } &&
+            string.Equals(guestSession.OwnerUserId, userId, StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<CreatGuestSessionResponse> CreateGuestSessionAsync(CreateGuestSessionRequest request)
@@ -299,10 +316,8 @@ public class GuestSessionService(
     {
         GuestSession guestSession = await GetGuestSessionAsync(guestSessionId);
 
-        if (!guestSession.Dishes.Any())
-            throw new CartIsEmptyException();
-
-        await ValidateDishesAsync(guestSession.Dishes);
+        if (guestSession.Dishes.Count > 0)
+            await ValidateDishesAsync(guestSession.Dishes);
 
         bool submitted = await guestSessionRepository.TryMarkSubmittedAsync(
             guestSession.Id,

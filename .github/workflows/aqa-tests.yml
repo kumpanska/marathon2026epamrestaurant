@@ -1,0 +1,55 @@
+name: AQA Tests
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aqa-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  group-preorder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      API_URL: ${{ vars.AQA_API_URL }}
+      UI_URL: ${{ vars.AQA_UI_URL }}
+      TESTTABLE_ID: ${{ vars.AQA_TESTTABLE_ID }}
+      TESTTABLE_WAITER_USERNAME: ${{ secrets.AQA_TESTTABLE_WAITER_USERNAME }}
+      TESTTABLE_WAITER_PASSWORD: ${{ secrets.AQA_TESTTABLE_WAITER_PASSWORD }}
+      WAITER_USERNAME: ${{ secrets.AQA_WAITER_USERNAME }}
+      WAITER_PASSWORD: ${{ secrets.AQA_WAITER_PASSWORD }}
+      ADMIN_USERNAME: ${{ secrets.AQA_ADMIN_USERNAME }}
+      ADMIN_PASSWORD: ${{ secrets.AQA_ADMIN_PASSWORD }}
+    defaults:
+      run:
+        working-directory: aqa/restaurant-aqa-framework
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Build AQA framework
+        run: dotnet build
+      - name: Install Chromium and system dependencies
+        run: pwsh ./bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+      - name: Run scenarios
+        id: run-tests
+        continue-on-error: true
+        run: dotnet run --no-build -- --report-trx
+      - name: Upload reports and failure traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqa-test-results
+          path: aqa/restaurant-aqa-framework/TestResults/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Preserve test failure status
+        if: always() && steps.run-tests.outcome == 'failure'
+        run: exit 1

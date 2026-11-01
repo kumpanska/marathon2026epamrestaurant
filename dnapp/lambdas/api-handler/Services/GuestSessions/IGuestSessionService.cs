@@ -12,6 +12,7 @@ public interface IGuestSessionService
     Task<GroupReservationStatusResponse> GetGroupReservationStatusAsync(string groupReservationId);
     Task<GetAllSessionsResponse> GetGroupSessionsAsync(string userId, string groupReservationId);
     Task<bool> IsAuthorizedAsync(string guestSessionToken, string guestSessionId);
+    Task<bool> IsOwnerSessionAuthorizedAsync(string userId, string guestSessionId);
     Task SubmitCartAsync(string guestSessionId);
     Task<GuestMenuResponse> GetGuestMenuAsync(string guestSessionId);
     Task<GetAllSessionsResponse> DeleteGuestSessionAsync(string userId, string groupReservationId, string guestSessionId);

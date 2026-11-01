@@ -22,6 +22,7 @@ public static class PlaywrightRunHooks
     {
         var settings = Settings.Current;
         ArtifactPaths.ClearTraces();
+        ArtifactPaths.ClearPerformanceReports();
         await PlaywrightInstaller.EnsureInstalledAsync(settings.Browser.ToString().ToLowerInvariant());
 
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();

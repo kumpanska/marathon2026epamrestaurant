@@ -129,6 +129,13 @@ export class CardReservationComponent {
     return this.r().preOrder?.orderItems?.length ?? 0;
   });
 
+  readonly canOpenGroupPreOrder = computed(
+    () =>
+      this.role() === Roles.CUSTOMER &&
+      this.r().guestCount >= 2 &&
+      this.r().status === ReservationStatusCustomer.Reserved
+  );
+
   readonly canOpenWaiterPreOrder = computed(() => {
     return (
       this.preOrderItemCount() > 0 ||
@@ -173,6 +180,13 @@ export class CardReservationComponent {
       queryParams,
     });
   }
+
+  onGroupPreOrder(): void {
+    if (this.canOpenGroupPreOrder()) {
+      void this.router.navigate(['/reservations', this.r().id, 'group-order']);
+    }
+  }
+
   onPreOrderWaiter(): void {
     if (this.preOrderItemCount() > 0) {
       this.navigateToWaiterPreOrder();

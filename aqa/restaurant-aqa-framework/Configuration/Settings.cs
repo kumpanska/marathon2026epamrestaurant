@@ -23,7 +23,7 @@ public enum TraceMode
     Never,
 }
 
-/// <summary>Pass/fail budgets (PERF_* in `.env`) for page-load and API-response performance checks.</summary>
+/// <summary>Thresholds (PERF_* in `.env`) used to classify page-load and API timings in the performance report.</summary>
 public sealed record PerformanceThresholds(int PageLoadMs, int ApiResponseMs);
 
 /// <summary>

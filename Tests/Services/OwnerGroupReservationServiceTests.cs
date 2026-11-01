@@ -72,6 +72,20 @@ public class OwnerGroupReservationServiceTests
     }
 
     [Fact]
+    public async Task GetGroupReservationInviteTokenAsync_WhenReservationHasNoGroup_ThrowsGroupNotFound()
+    {
+        _reservations
+            .Setup(repository => repository.GetReservationByIdAsync(ReservationId))
+            .ReturnsAsync(CreateReservation());
+        _groupReservations
+            .Setup(repository => repository.GetByReservationIdAsync(ReservationId))
+            .ReturnsAsync((GroupReservation?)null);
+
+        await Assert.ThrowsAsync<GroupReservationNotFoundException>(() =>
+            _service.GetGroupReservationInviteTokenAsync(ReservationId));
+    }
+
+    [Fact]
     public async Task SubmitGroupReservationAsync_AggregatesOnlySubmittedSessionsAndSubmitsThroughOrderRepository()
     {
         GroupReservation groupReservation = CreateGroupReservation();

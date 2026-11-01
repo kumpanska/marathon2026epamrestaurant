@@ -20,6 +20,18 @@ public sealed class GroupReservationsApi(IAPIRequestContext api) : ApiClientBase
         GetAsync(Url($"/guest/groups/{groupReservationId}/sessions"),
             new APIRequestContextOptions { Headers = Headers(bearerToken) });
 
+    public Task<IAPIResponse> GetGroupStatusAsync(string groupReservationId) =>
+        GetAsync(Url($"/guest/groups/{groupReservationId}/status"));
+
+    public Task<IAPIResponse> SubmitGroupReservationAsync(
+        string groupReservationId, string reservationId, string? bearerToken = null) =>
+        Api.PostAsync(Url($"/group-reservations/{groupReservationId}/submit"),
+            new APIRequestContextOptions
+            {
+                DataString = Serialize(new SubmitGroupReservationRequest(reservationId)),
+                Headers = Headers(bearerToken),
+            });
+
     public Task<IAPIResponse> CreateGuestSessionAsync(CreateGuestSessionRequest request) =>
         Api.PostAsync(Url("/guest/sessions"), new APIRequestContextOptions
         {

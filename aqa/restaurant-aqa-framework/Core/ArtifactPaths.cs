@@ -8,6 +8,7 @@ namespace Restaurant_Aqa_Framework.Core;
 ///   *-report.html, *.trx, *.json   TUnit report / TRX (--report-trx; also the re-run-failed TRX files)
 ///   reqnroll/                      Reqnroll HTML report + messages ndjson (see reqnroll.json)
 ///   traces/                        Playwright trace zips (npx playwright show-trace &lt;file&gt;)
+///   performance/                   Per-scenario browser timing reports
 /// </code>
 /// The root is the project folder's `TestResults/` locally (found by walking up from the
 /// binaries to the `.csproj`) and falls back to `TestResults/` next to the binaries when
@@ -19,12 +20,21 @@ public static class ArtifactPaths
 
     public static string Traces => Directory.CreateDirectory(Path.Combine(Root, "traces")).FullName;
 
+    public static string Performance => Directory.CreateDirectory(Path.Combine(Root, "performance")).FullName;
+
     /// <summary>Removes traces left by earlier runs, so the folder only ever holds the current run's.</summary>
     public static void ClearTraces()
     {
         var traces = Path.Combine(Root, "traces");
         if (Directory.Exists(traces))
             Directory.Delete(traces, recursive: true);
+    }
+
+    public static void ClearPerformanceReports()
+    {
+        var performance = Path.Combine(Root, "performance");
+        if (Directory.Exists(performance))
+            Directory.Delete(performance, recursive: true);
     }
 
     private static string ResolveRoot()

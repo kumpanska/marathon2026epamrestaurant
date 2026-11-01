@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { CardReservationComponent } from './card-reservation.component';
 import { API_BASE_URL } from '@app/shared/config/api-base-url.token';
 import { ReservationCustomer, ReservationStatusCustomer } from '@app/models/reservations/reservation.model';
@@ -35,5 +35,36 @@ describe('CardReservationComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('shows a group pre-order action for a customer reservation with multiple guests', () => {
+    const groupButton = Array.from(
+      fixture.nativeElement.querySelectorAll<HTMLButtonElement>('button')
+    ).find((candidate: HTMLButtonElement) => candidate.textContent?.trim() === 'Group Pre-Order');
+
+    expect(groupButton).toBeTruthy();
+  });
+
+  it('does not show a group pre-order action for a single-guest reservation', () => {
+    fixture.componentRef.setInput('r', { ...RESERVATION, guestCount: 1 });
+    fixture.detectChanges();
+
+    const groupButton = Array.from(
+      fixture.nativeElement.querySelectorAll<HTMLButtonElement>('button')
+    ).find((candidate: HTMLButtonElement) => candidate.textContent?.trim() === 'Group Pre-Order');
+
+    expect(groupButton).toBeUndefined();
+  });
+
+  it('opens the group order route from the reservation card', async () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
+    const groupButton = Array.from(
+      fixture.nativeElement.querySelectorAll<HTMLButtonElement>('button')
+    ).find((candidate: HTMLButtonElement) => candidate.textContent?.trim() === 'Group Pre-Order');
+
+    (groupButton as HTMLButtonElement).click();
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/reservations', RESERVATION.id, 'group-order']);
   });
 });

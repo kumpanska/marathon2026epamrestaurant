@@ -469,6 +469,14 @@ public class GuestSessionServiceTests
         Assert.False(result);
     }
 
+    [Fact]
+    public async Task IsAuthorizedAsync_NonBase64Token_ReturnsFalse()
+    {
+        bool result = await _guestSessionService.IsAuthorizedAsync("not-a-session-token", "session-id");
+
+        Assert.False(result);
+    }
+
     [Theory]
     [AutoData]
     public async Task IsAuthorizedAsync_InvalidGuestSessionId_ReturnsFalse(GuestSession guestSession, byte[] tokenBytes, string guestSessionId)
@@ -485,6 +493,41 @@ public class GuestSessionServiceTests
 
         Assert.False(result);
     }
+
+    [Theory]
+    [AutoData]
+    public async Task IsOwnerSessionAuthorizedAsync_ReturnsTrueForMatchingOwner(
+        GuestSession guestSession,
+        string userId)
+    {
+        guestSession.IsOwnerSession = true;
+        guestSession.OwnerUserId = userId.ToUpperInvariant();
+        _mockGuestSessionRepository
+            .Setup(repository => repository.GetByGuestSessionId(guestSession.Id))
+            .ReturnsAsync(guestSession);
+
+        bool result = await _guestSessionService.IsOwnerSessionAuthorizedAsync(userId, guestSession.Id);
+
+        Assert.True(result);
+    }
+
+    [Theory]
+    [AutoData]
+    public async Task IsOwnerSessionAuthorizedAsync_ReturnsFalseForNonOwnerSession(
+        GuestSession guestSession,
+        string userId)
+    {
+        guestSession.IsOwnerSession = false;
+        guestSession.OwnerUserId = userId;
+        _mockGuestSessionRepository
+            .Setup(repository => repository.GetByGuestSessionId(guestSession.Id))
+            .ReturnsAsync(guestSession);
+
+        bool result = await _guestSessionService.IsOwnerSessionAuthorizedAsync(userId, guestSession.Id);
+
+        Assert.False(result);
+    }
+
     [Theory]
     [AutoData]
     public async Task SubmitCartAsync_Valid_SubmitsSuccessfuilly(GuestSession guestSession, GroupReservation groupReservation, Dish[] dishes)
@@ -550,7 +593,9 @@ public class GuestSessionServiceTests
 
     [Theory]
     [AutoData]
-    public async Task SubmitCartAsync_GuestSessionHasNoDishes_ThrowsCartIsEmptyException(GuestSession guestSession, GroupReservation groupReservation)
+    public async Task SubmitCartAsync_GuestSessionHasNoDishes_MarksSessionSubmitted(
+        GuestSession guestSession,
+        GroupReservation groupReservation)
     {
         guestSession.Dishes = [];
         guestSession.GroupReservationId = groupReservation.GroupReservationId;
@@ -564,7 +609,15 @@ public class GuestSessionServiceTests
             .Setup(r => r.GetGroupReservationByIdAsync(guestSession.GroupReservationId))
             .ReturnsAsync(groupReservation);
 
-        await Assert.ThrowsAsync<CartIsEmptyException>(() => _guestSessionService.SubmitCartAsync(guestSession.Id));
+        _mockGuestSessionRepository
+            .Setup(r => r.TryMarkSubmittedAsync(guestSession.Id, guestSession.GroupReservationId))
+            .ReturnsAsync(true);
+
+        await _guestSessionService.SubmitCartAsync(guestSession.Id);
+
+        _mockGuestSessionRepository.Verify(
+            repository => repository.TryMarkSubmittedAsync(guestSession.Id, guestSession.GroupReservationId),
+            Times.Once);
     }
 
     [Theory]
@@ -744,7 +797,4 @@ public class GuestSessionServiceTests
         };
     }
 }
-
-
-
 

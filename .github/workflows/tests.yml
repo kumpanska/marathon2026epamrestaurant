@@ -44,14 +44,7 @@ jobs:
         env:
           RP_API_KEY: ${{ secrets.RP_API_KEY }}
           RP_ENDPOINT: ${{ secrets.RP_ENDPOINT }}
-        run: |
-          test -f test-results/junit.xml || { echo "junit.xml not found"; exit 1; }
-          rm -rf rp-upload && mkdir rp-upload
-          (cd test-results && zip -q ../rp-upload/Frontend-unit-tests.zip junit.xml)
-          curl -sS --fail-with-body -X POST \
-            "$RP_ENDPOINT/api/v1/plugin/$RP_PROJECT/junit/import" \
-            -H "Authorization: Bearer $RP_API_KEY" \
-            -F "file=@rp-upload/Frontend-unit-tests.zip;type=application/x-zip-compressed"
+        run: node scripts/rp-upload.mjs test-results/junit.xml
 
       - name: Build
         run: npm run build
